@@ -3,21 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Identity Aware Proxy Headers</title>
+    <title>GCP Identity Aware Proxy Headers</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
             background-color: #f3f4f6;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
+            min-height: 80vh;
             font-family: Arial, sans-serif;
+            margin: 0;
         }
 
         .container {
@@ -26,57 +21,67 @@
             border-radius: 0.5rem;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             width: 100%;
-            max-width: 1000px;
-            overflow: hidden;
+            max-width: 800px;
         }
 
         h1 {
             font-size: 1.5rem;
             font-weight: bold;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
             text-align: center;
             color: #3b82f6;
         }
 
-        .container > div {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-            gap: 1rem;
-        }
-
-        .container > div > div {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-        }
-
-        hr {
-            margin: 2rem 0;
-            border: none;
-            border-top: 1px solid #e5e7eb;
-        }
-
-        .header {
-            margin-bottom: 1rem;
-        }
-
-        .header label {
-            font-weight: bold;
-            color: #374151;
-        }
-
-        .header span {
-            display: block;
-            margin-top: 0.5rem;
-            color: #1f2937;
-        }
-
         .status {
             font-weight: bold;
-            color: #ef4444;
             text-align: center;
             margin-bottom: 1rem;
+        }
+        .status.good {
+            color: #10B981; /* Green */
+        }
+        .status.warning {
+            color: #F59E0B; /* Yellow */
+        }
+        .status.error {
+            color: #EF4444; /* Red */
+        }
+
+        .status h2 {
+            font-size: 1rem;
+        }
+
+        table.header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1rem;
+        }
+
+        table.header-table th, table.header-table td {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0.5rem;
+            text-align: left;
+        }
+
+        table.header-table th {
+            background-color: #3b82f6;
+            color: #fff;
+        }
+
+        .header-column {
+            width: 270px;
+        }
+
+        .value-column {
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        .status-indicator {
+            font-size: 1.2rem;
+            padding-right: 0.5rem;
         }
 
         .payload {
@@ -87,55 +92,56 @@
             font-family: monospace;
             white-space: pre-wrap;
             word-wrap: break-word;
+            overflow-wrap: anywhere;
+            margin-bottom: 1rem;
         }
 
-        .header-name {
-            font-family: monospace;
-            background-color: #e5e7eb;
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.25rem;
-            font-size: 0.9rem;
-        }
-
-        .not-set {
-            color: #ef4444;
-            font-style: italic;
+        hr {
+            margin: 2rem 0;
+            border: none;
+            border-top: 1px solid #e5e7eb;
         }
     </style>
 </head>
 <body>
-    <div class="container" hx-ext="response-targets">
-        <h1>Identity Aware Proxy Headers</h1>
-        <p>Identity Aware Proxy (IAP) provides a way to control access to your applications running on Google Cloud. It verifies user identity and context of the request to determine if the user should be allowed to access the application. IAP headers contain information about the authenticated user and their session, which can be used by the application to enforce access controls and personalize the user experience.</p>
+    <div class="container">
+        <h1>GCP Identity Aware Proxy Headers</h1>
         <hr>
-        {{if .Status}}
-        <div class="status">{{.Status}}</div>
-        {{end}}
-        <div class="header">
-            <label class="header-name">x-goog-authenticated-user-email</label>
-            <span id="user-email" {{if not .UserEmail}}class="not-set"{{end}}>
-                {{if .UserEmail}}{{.UserEmail}}{{else}}NOT SET{{end}}
-            </span>
+        <div class="status {{.OverallStatus}}">
+            <h2>{{.StatusMessage}}</h2>
         </div>
-        <div class="header">
-            <label class="header-name">x-goog-authenticated-user-id</label>
-            <span id="user-id" {{if not .UserID}}class="not-set"{{end}}>
-                {{if .UserID}}{{.UserID}}{{else}}NOT SET{{end}}
-            </span>
-        </div>
-        <div class="header">
-            <label class="header-name">x-goog-iap-jwt-assertion</label>
-            <span id="jwt-assertion" {{if not .JWTAssertion}}class="not-set"{{end}}>
-                {{if .JWTAssertion}}{{.JWTAssertion}}{{else}}NOT SET{{end}}
-            </span>
-        </div>
+        <table class="header-table">
+            <tr>
+                <th class="header-column">Header</th>
+                <th>Value</th>
+            </tr>
+            <tr>
+                <td class="header-column">
+                    <span class="status-indicator">{{statusIndicator .UserEmailStatus}}</span>
+                    x-goog-authenticated-user-email
+                </td>
+                <td class="value-column">{{if .UserEmail}}{{.UserEmail}}{{else}}NOT SET{{end}}</td>
+            </tr>
+            <tr>
+                <td class="header-column">
+                    <span class="status-indicator">{{statusIndicator .UserIDStatus}}</span>
+                    x-goog-authenticated-user-id
+                </td>
+                <td class="value-column">{{if .UserID}}{{.UserID}}{{else}}NOT SET{{end}}</td>
+            </tr>
+            <tr>
+                <td class="header-column">
+                    <span class="status-indicator">{{statusIndicator .JWTAssertionStatus}}</span>
+                    x-goog-iap-jwt-assertion
+                </td>
+                <td class="value-column">{{if .JWTAssertion}}{{.JWTAssertion}}{{else}}NOT SET{{end}}</td>
+            </tr>
+        </table>
+
         {{if .JWTPayload}}
-        <div class="header">
-            <label class="header-name">Decoded JWT Payload</label>
-            <pre class="payload">{{.JWTPayload}}</pre>
-        </div>
+        <h3>Decoded JWT Payload</h3>
+        <pre class="payload">{{.JWTPayload}}</pre>
         {{end}}
-        <hr>
     </div>
 </body>
 </html>

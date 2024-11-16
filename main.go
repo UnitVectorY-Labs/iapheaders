@@ -1,48 +1,76 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"text/template"
 
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
+const jwksIap = "https://www.gstatic.com/iap/verify/public_key-jwk"
+
+// HeaderData holds the necessary header information and statuses
 type HeaderData struct {
-	Status       string
-	UserEmail    string
-	UserID       string
-	JWTAssertion string
-	JWTPayload   string
+	UserEmail          string
+	UserEmailStatus    string
+	UserID             string
+	UserIDStatus       string
+	JWTAssertion       string
+	JWTAssertionStatus string
+	JWTPayload         string
+	JWTPayloadStatus   string
+	OverallStatus      string
+	StatusMessage      string
 }
 
 func main() {
-	// Read in PORT envirionment variable and default to 8080
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
+	port := getEnv("PORT", "8080")
 
-	// Load the HTML template
-	tpl := template.Must(template.ParseFiles("templates/index.html"))
+	tpl := template.Must(template.New("index.html").Funcs(template.FuncMap{
+		"statusIndicator": statusIndicator,
+	}).ParseFiles("templates/index.html"))
 
-	// Set up HTTP handlers
-	http.HandleFunc("/", getHomeHandler(tpl))
+	http.HandleFunc("/", homeHandler(tpl))
 
-	// Start the server
 	log.Printf("Server starting on port %s", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatalf("Could not start server: %v", err)
 	}
 }
 
-// serveHome renders the main HTML page
-func getHomeHandler(tpl *template.Template) http.HandlerFunc {
+// getEnv retrieves environment variables with a fallback default
+func getEnv(key, defaultVal string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultVal
+}
+
+// statusIndicator returns an emoji based on the status string
+func statusIndicator(status string) string {
+	switch status {
+	case "good":
+		return "🟢"
+	case "warning":
+		return "🟡"
+	case "error":
+		return "🔴"
+	default:
+		return ""
+	}
+}
+
+// homeHandler generates the HTTP handler with the provided template
+func homeHandler(tpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
@@ -55,48 +83,103 @@ func getHomeHandler(tpl *template.Template) http.HandlerFunc {
 			JWTAssertion: r.Header.Get("x-goog-iap-jwt-assertion"),
 		}
 
-		// Check if IAP appears to be completely disabled
-		if data.UserEmail == "" && data.UserID == "" && data.JWTAssertion == "" {
-			data.Status = "IAP appears to be disabled - no IAP headers detected"
-			tpl.Execute(w, data)
-			return
-		}
+		// Set statuses based on presence of headers
+		data.UserEmailStatus = statusFromBool(data.UserEmail != "")
+		data.UserIDStatus = statusFromBool(data.UserID != "")
+		data.JWTAssertionStatus = statusFromBool(data.JWTAssertion != "")
 
-		// Only validate JWT if it exists
 		if data.JWTAssertion != "" {
-			token, err := validateIAPJWT(data.JWTAssertion)
+			payload, err := decodeJWTPayload(data.JWTAssertion)
 			if err != nil {
-				data.Status = fmt.Sprintf("JWT Validation Error: %v", err)
+				data.JWTPayloadStatus = "warning"
+				data.StatusMessage = appendMessage(data.StatusMessage, fmt.Sprintf("JWT Decode Error: %v", err))
 			} else {
-				claimsJSON, err := json.MarshalIndent(token, "", "  ")
-				if err != nil {
-					data.Status = "Error decoding JWT payload"
-				} else {
-					data.JWTPayload = string(claimsJSON)
-					data.Status = "JWT signature validated successfully"
-				}
+				data.JWTPayload = payload
+				data.JWTPayloadStatus = "good"
 			}
+
+			if _, err := validateIAPJWT(data.JWTAssertion); err != nil {
+				data.JWTAssertionStatus = "warning"
+				data.StatusMessage = appendMessage(data.StatusMessage, fmt.Sprintf("JWT Validation Error: %v", err))
+			}
+		} else {
+			data.JWTAssertionStatus = "error"
 		}
 
-		// Always show the template with whatever data we have
-		err := tpl.Execute(w, data)
-		if err != nil {
+		// Determine overall status
+		data.OverallStatus, data.StatusMessage = determineOverallStatus(data)
+
+		// Render template
+		if err := tpl.Execute(w, data); err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			log.Printf("Template execution error: %v", err)
 		}
 	}
 }
 
-func validateIAPJWT(jwtToken string) (jwt.Token, error) {
-	keySet, err := jwk.Fetch(context.Background(), "https://www.gstatic.com/iap/verify/public_key-jwk")
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch JWKS: %v", err)
+// statusFromBool returns "good" if true, else "error"
+func statusFromBool(ok bool) string {
+	if ok {
+		return "good"
+	}
+	return "error"
+}
+
+// appendMessage appends a new message to the existing status message
+func appendMessage(existing, newMsg string) string {
+	if existing != "" {
+		return existing + "\n" + newMsg
+	}
+	return newMsg
+}
+
+// determineOverallStatus computes the overall status and message based on individual statuses
+func determineOverallStatus(data HeaderData) (string, string) {
+	if data.UserEmailStatus == "good" && data.UserIDStatus == "good" &&
+		data.JWTAssertionStatus == "good" && data.JWTPayloadStatus == "good" {
+		if data.StatusMessage == "" {
+			data.StatusMessage = "All headers are valid and JWT is verified."
+		}
+		return "good", data.StatusMessage
 	}
 
-	token, err := jwt.ParseString(jwtToken, jwt.WithKeySet(keySet))
-	if err != nil {
-		return nil, fmt.Errorf("failed to validate JWT: %v", err)
+	if data.UserEmailStatus == "error" && data.UserIDStatus == "error" &&
+		data.JWTAssertionStatus == "error" {
+		return "error", "IAP appears to be disabled - no IAP headers detected."
 	}
 
-	return token, nil
+	if data.StatusMessage == "" {
+		data.StatusMessage = "Some headers are missing or invalid."
+	}
+	return "warning", data.StatusMessage
+}
+
+// validateIAPJWT validates the JWT using the IAP JWKS
+func validateIAPJWT(token string) (jwt.Token, error) {
+	keySet, err := jwk.Fetch(context.Background(), jwksIap)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch JWKS: %w", err)
+	}
+
+	return jwt.ParseString(token, jwt.WithKeySet(keySet))
+}
+
+// decodeJWTPayload decodes and pretty-prints the JWT payload
+func decodeJWTPayload(token string) (string, error) {
+	parts := strings.Split(token, ".")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("invalid JWT format")
+	}
+
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return "", fmt.Errorf("failed to decode payload: %w", err)
+	}
+
+	var prettyJSON bytes.Buffer
+	if err := json.Indent(&prettyJSON, payload, "", "  "); err != nil {
+		return "", fmt.Errorf("failed to pretty print JSON: %w", err)
+	}
+
+	return prettyJSON.String(), nil
 }
