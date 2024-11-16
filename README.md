@@ -6,6 +6,14 @@ Displays GCP Identity-Aware Proxy headers and JWT for inspection.
 
 `iapheaders` is a web application that allows you to inspect request headers for testing and understanding GCP's [Identity-Aware Proxy](https://cloud.google.com/security/products/iap) (IAP).
 
+### Example for Valid IAP Headers
+
+![Application Interface Valid](./assets/interface_valid.png)
+
+### Example for Missing IAP Headers
+
+![Application Interface Missing](./assets/interface_missing.png)
+
 ## Usage
 
 The latest `iapheaders` Docker image is available for deployment from GitHub Packages at [ghcr.io/unitvectory-labs/iapheaders](https://github.com/UnitVectorY-Labs/iapheaders/pkgs/container/iapheaders).
