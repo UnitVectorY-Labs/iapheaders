@@ -1,3 +1,5 @@
+[![GitHub release](https://img.shields.io/github/release/UnitVectorY-Labs/iapheaders.svg)](https://github.com/UnitVectorY-Labs/iapheaders/releases/latest) [![License](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT) [![Active](https://img.shields.io/badge/Status-Active-green)](https://guide.unitvectorylabs.com/bestpractices/status/#active)
+
 # iapheaders
 
 Displays GCP Identity-Aware Proxy headers and JWT for inspection.
