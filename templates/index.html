@@ -26,7 +26,7 @@
             border-radius: 0.5rem;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             width: 100%;
-            max-width: 700px;
+            max-width: 1000px;
             overflow: hidden;
         }
 
@@ -71,6 +71,36 @@
             margin-top: 0.5rem;
             color: #1f2937;
         }
+
+        .status {
+            font-weight: bold;
+            color: #ef4444;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .payload {
+            background-color: #f9fafb;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            color: #1f2937;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .header-name {
+            font-family: monospace;
+            background-color: #e5e7eb;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.9rem;
+        }
+
+        .not-set {
+            color: #ef4444;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -78,20 +108,34 @@
         <h1>Identity Aware Proxy Headers</h1>
         <p>Identity Aware Proxy (IAP) provides a way to control access to your applications running on Google Cloud. It verifies user identity and context of the request to determine if the user should be allowed to access the application. IAP headers contain information about the authenticated user and their session, which can be used by the application to enforce access controls and personalize the user experience.</p>
         <hr>
+        {{if .Status}}
+        <div class="status">{{.Status}}</div>
+        {{end}}
         <div class="header">
-            <label for="user-email">User Email:</label>
-            <span id="user-email">{{.UserEmail}}</span>
+            <label class="header-name">x-goog-authenticated-user-email</label>
+            <span id="user-email" {{if not .UserEmail}}class="not-set"{{end}}>
+                {{if .UserEmail}}{{.UserEmail}}{{else}}NOT SET{{end}}
+            </span>
         </div>
         <div class="header">
-            <label for="user-id">User ID:</label>
-            <span id="user-id">{{.UserID}}</span>
+            <label class="header-name">x-goog-authenticated-user-id</label>
+            <span id="user-id" {{if not .UserID}}class="not-set"{{end}}>
+                {{if .UserID}}{{.UserID}}{{else}}NOT SET{{end}}
+            </span>
         </div>
         <div class="header">
-            <label for="jwt-assertion">JWT Assertion:</label>
-            <span id="jwt-assertion">{{.JWTAssertion}}</span>
+            <label class="header-name">x-goog-iap-jwt-assertion</label>
+            <span id="jwt-assertion" {{if not .JWTAssertion}}class="not-set"{{end}}>
+                {{if .JWTAssertion}}{{.JWTAssertion}}{{else}}NOT SET{{end}}
+            </span>
         </div>
+        {{if .JWTPayload}}
+        <div class="header">
+            <label class="header-name">Decoded JWT Payload</label>
+            <pre class="payload">{{.JWTPayload}}</pre>
+        </div>
+        {{end}}
         <hr>
-        <div id="error"></div>
     </div>
 </body>
 </html>
