@@ -39,7 +39,10 @@ func main() {
 		"statusIndicator": statusIndicator,
 	}).ParseFiles("templates/index.html"))
 
-	http.HandleFunc("/", homeHandler(tpl))
+	hideSignatureStr := getEnv("HIDE_SIGNATURE", "false")
+	hideSignature := (hideSignatureStr == "true")
+
+	http.HandleFunc("/", homeHandler(tpl, hideSignature))
 
 	log.Printf("Server starting on port %s", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
@@ -70,7 +73,7 @@ func statusIndicator(status string) string {
 }
 
 // homeHandler generates the HTTP handler with the provided template
-func homeHandler(tpl *template.Template) http.HandlerFunc {
+func homeHandler(tpl *template.Template, hideSignature bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
@@ -101,6 +104,13 @@ func homeHandler(tpl *template.Template) http.HandlerFunc {
 			if _, err := validateIAPJWT(data.JWTAssertion); err != nil {
 				data.JWTAssertionStatus = "warning"
 				data.StatusMessage = appendMessage(data.StatusMessage, fmt.Sprintf("JWT Validation Error: %v", err))
+			}
+
+			if hideSignature {
+				parts := strings.Split(data.JWTAssertion, ".")
+				if len(parts) == 3 {
+					data.JWTAssertion = parts[0] + "." + parts[1] + ".SIGNATURE_REMOVED_BY_IAPHEADERS"
+				}
 			}
 		} else {
 			data.JWTAssertionStatus = "error"
