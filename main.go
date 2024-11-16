@@ -7,6 +7,12 @@ import (
 	"text/template"
 )
 
+type HeaderData struct {
+	UserEmail    string
+	UserID       string
+	JWTAssertion string
+}
+
 func main() {
 	// Read in PORT envirionment variable and default to 8080
 	port := os.Getenv("PORT")
@@ -35,7 +41,13 @@ func getHomeHandler(tpl *template.Template) http.HandlerFunc {
 			return
 		}
 
-		err := tpl.Execute(w, nil)
+		data := HeaderData{
+			UserEmail:    r.Header.Get("x-goog-authenticated-user-email"),
+			UserID:       r.Header.Get("x-goog-authenticated-user-id"),
+			JWTAssertion: r.Header.Get("x-goog-iap-jwt-assertion"),
+		}
+
+		err := tpl.Execute(w, data)
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			log.Printf("Template execution error: %v", err)

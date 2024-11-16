@@ -56,12 +56,40 @@
             border: none;
             border-top: 1px solid #e5e7eb;
         }
+
+        .header {
+            margin-bottom: 1rem;
+        }
+
+        .header label {
+            font-weight: bold;
+            color: #374151;
+        }
+
+        .header span {
+            display: block;
+            margin-top: 0.5rem;
+            color: #1f2937;
+        }
     </style>
 </head>
 <body>
     <div class="container" hx-ext="response-targets">
         <h1>Identity Aware Proxy Headers</h1>
         <p>Identity Aware Proxy (IAP) provides a way to control access to your applications running on Google Cloud. It verifies user identity and context of the request to determine if the user should be allowed to access the application. IAP headers contain information about the authenticated user and their session, which can be used by the application to enforce access controls and personalize the user experience.</p>
+        <hr>
+        <div class="header">
+            <label for="user-email">User Email:</label>
+            <span id="user-email">{{.UserEmail}}</span>
+        </div>
+        <div class="header">
+            <label for="user-id">User ID:</label>
+            <span id="user-id">{{.UserID}}</span>
+        </div>
+        <div class="header">
+            <label for="jwt-assertion">JWT Assertion:</label>
+            <span id="jwt-assertion">{{.JWTAssertion}}</span>
+        </div>
         <hr>
         <div id="error"></div>
     </div>
