@@ -27,7 +27,6 @@ type HeaderData struct {
 	JWTAssertion       string
 	JWTAssertionStatus string
 	JWTPayload         string
-	JWTPayloadStatus   string
 	OverallStatus      string
 	StatusMessage      string
 }
@@ -91,19 +90,36 @@ func homeHandler(tpl *template.Template, hideSignature bool) http.HandlerFunc {
 		data.UserIDStatus = statusFromBool(data.UserID != "")
 		data.JWTAssertionStatus = statusFromBool(data.JWTAssertion != "")
 
+		verifiedUserEmail := false
+		verifiedUserId := false
+
 		if data.JWTAssertion != "" {
-			payload, err := decodeJWTPayload(data.JWTAssertion)
+			payload, email, sub, identitySource, err := decodeJWTPayload(data.JWTAssertion)
 			if err != nil {
-				data.JWTPayloadStatus = "warning"
 				data.StatusMessage = appendMessage(data.StatusMessage, fmt.Sprintf("JWT Decode Error: %v", err))
 			} else {
 				data.JWTPayload = payload
-				data.JWTPayloadStatus = "good"
 			}
 
 			if _, err := validateIAPJWT(data.JWTAssertion); err != nil {
 				data.JWTAssertionStatus = "warning"
 				data.StatusMessage = appendMessage(data.StatusMessage, fmt.Sprintf("JWT Validation Error: %v", err))
+			}
+
+			if data.JWTAssertionStatus == "good" {
+				if identitySource == "GOOGLE" {
+					if ("accounts.google.com:" + email) == data.UserEmail {
+						verifiedUserEmail = true
+					}
+				} else if identitySource == "GCIP" {
+					if email == data.UserEmail {
+						verifiedUserEmail = true
+					}
+				}
+
+				if sub == data.UserID {
+					verifiedUserId = true
+				}
 			}
 
 			if hideSignature {
@@ -114,6 +130,14 @@ func homeHandler(tpl *template.Template, hideSignature bool) http.HandlerFunc {
 			}
 		} else {
 			data.JWTAssertionStatus = "error"
+		}
+
+		// If no JWT then the other headers can't be verified
+		if data.UserEmailStatus == "good" && !verifiedUserEmail {
+			data.UserEmailStatus = "warning"
+		}
+		if data.UserIDStatus == "good" && !verifiedUserId {
+			data.UserIDStatus = "warning"
 		}
 
 		// Determine overall status
@@ -146,7 +170,7 @@ func appendMessage(existing, newMsg string) string {
 // determineOverallStatus computes the overall status and message based on individual statuses
 func determineOverallStatus(data HeaderData) (string, string) {
 	if data.UserEmailStatus == "good" && data.UserIDStatus == "good" &&
-		data.JWTAssertionStatus == "good" && data.JWTPayloadStatus == "good" {
+		data.JWTAssertionStatus == "good" {
 		if data.StatusMessage == "" {
 			data.StatusMessage = "All headers are valid and JWT is verified."
 		}
@@ -175,21 +199,30 @@ func validateIAPJWT(token string) (jwt.Token, error) {
 }
 
 // decodeJWTPayload decodes and pretty-prints the JWT payload
-func decodeJWTPayload(token string) (string, error) {
+func decodeJWTPayload(token string) (string, string, string, string, error) {
 	parts := strings.Split(token, ".")
 	if len(parts) < 2 {
-		return "", fmt.Errorf("invalid JWT format")
+		return "", "", "", "", fmt.Errorf("invalid JWT format")
 	}
 
 	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
 	if err != nil {
-		return "", fmt.Errorf("failed to decode payload: %w", err)
+		return "", "", "", "", fmt.Errorf("failed to decode payload: %w", err)
 	}
 
 	var prettyJSON bytes.Buffer
 	if err := json.Indent(&prettyJSON, payload, "", "  "); err != nil {
-		return "", fmt.Errorf("failed to pretty print JSON: %w", err)
+		return "", "", "", "", fmt.Errorf("failed to pretty print JSON: %w", err)
 	}
 
-	return prettyJSON.String(), nil
+	var claims map[string]interface{}
+	if err := json.Unmarshal(payload, &claims); err != nil {
+		return "", "", "", "", fmt.Errorf("failed to unmarshal JSON: %w", err)
+	}
+
+	email, _ := claims["email"].(string)
+	sub, _ := claims["sub"].(string)
+	identitySource, _ := claims["identity_source"].(string)
+
+	return prettyJSON.String(), email, sub, identitySource, nil
 }
