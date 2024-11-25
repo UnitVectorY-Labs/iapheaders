@@ -36,3 +36,7 @@ IAP sets the following headers:
 - `x-goog-iap-jwt-assertion`: JWT token for user identity verification.
 
 `iapheaders` displays these headers and decodes the JWT token to show its contents. The JWT, signed by Google, can be verified using the public key from [https://www.gstatic.com/iap/verify/public_key-jwk](https://www.gstatic.com/iap/verify/public_key-jwk). `iapheaders` checks the signature and indicates the JWT's validity.
+
+## Limitations
+
+- JWK caching is not implemented, and the public key is fetched from Google's servers for each request.
