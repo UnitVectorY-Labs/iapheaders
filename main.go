@@ -41,6 +41,11 @@ func main() {
 	hideSignatureStr := getEnv("HIDE_SIGNATURE", "false")
 	hideSignature := (hideSignatureStr == "true")
 
+	// Serve static files from the "static" directory
+	fs := http.FileServer(http.Dir("./static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
+
+	// Handle the home page
 	http.HandleFunc("/", homeHandler(tpl, hideSignature))
 
 	log.Printf("Server starting on port %s", port)

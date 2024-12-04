@@ -4,104 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GCP Identity Aware Proxy Headers</title>
-    <style>
-        body {
-            background-color: #f3f4f6;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 80vh;
-            font-family: Arial, sans-serif;
-            margin: 0;
-        }
-
-        .container {
-            background-color: #fff;
-            padding: 2rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 800px;
-        }
-
-        h1 {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            text-align: center;
-            color: #3b82f6;
-        }
-
-        .status {
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-        .status.good {
-            color: #10B981; /* Green */
-        }
-        .status.warning {
-            color: #F59E0B; /* Yellow */
-        }
-        .status.error {
-            color: #EF4444; /* Red */
-        }
-
-        .status h2 {
-            font-size: 1rem;
-        }
-
-        table.header-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 1rem;
-        }
-
-        table.header-table th, table.header-table td {
-            border-bottom: 1px solid #e5e7eb;
-            padding: 0.5rem;
-            text-align: left;
-        }
-
-        table.header-table th {
-            background-color: #3b82f6;
-            color: #fff;
-        }
-
-        .header-column {
-            width: 270px;
-        }
-
-        .value-column {
-            font-family: monospace;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            overflow-wrap: anywhere;
-        }
-
-        .status-indicator {
-            font-size: 1.2rem;
-            padding-right: 0.5rem;
-        }
-
-        .payload {
-            background-color: #f9fafb;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            color: #1f2937;
-            font-family: monospace;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            overflow-wrap: anywhere;
-            margin-bottom: 1rem;
-        }
-
-        hr {
-            margin: 2rem 0;
-            border: none;
-            border-top: 1px solid #e5e7eb;
-        }
-    </style>
+    <link rel="stylesheet" href="./static/style.css">
 </head>
 <body>
     <div class="container">
@@ -143,5 +46,13 @@
         <pre class="payload">{{.JWTPayload}}</pre>
         {{end}}
     </div>
+
+    <footer>
+        <p>
+            <a href="https://github.com/UnitVectorY-Labs">UnitVectorY Labs</a> | 
+            <a href="https://opensource.org/licenses/MIT">MIT License</a> | 
+            <a href="https://github.com/UnitVectorY-Labs/iapheaders"><strong>iapheaders</strong> on GitHub</a>
+        </p>
+     </footer>
 </body>
 </html>
