@@ -1,4 +1,4 @@
-module iapheaders
+module github.com/UnitVectorY-Labs/iapheaders
 
 go 1.23.5
 
