@@ -137,7 +137,7 @@ func homeHandler(tpl *template.Template, hideSignature bool) http.HandlerFunc {
 			data.JWTAssertionStatus = "error"
 		}
 
-		// If no JWT then the other headers can't be verified
+		// Without a JWT, the other headers cannot be verified
 		if data.UserEmailStatus == "good" && !verifiedUserEmail {
 			data.UserEmailStatus = "warning"
 		}
@@ -177,14 +177,14 @@ func determineOverallStatus(data HeaderData) (string, string) {
 	if data.UserEmailStatus == "good" && data.UserIDStatus == "good" &&
 		data.JWTAssertionStatus == "good" {
 		if data.StatusMessage == "" {
-			data.StatusMessage = "All headers are valid and JWT is verified."
+			data.StatusMessage = "All IAP headers are present and the JWT is verified."
 		}
 		return "good", data.StatusMessage
 	}
 
 	if data.UserEmailStatus == "error" && data.UserIDStatus == "error" &&
 		data.JWTAssertionStatus == "error" {
-		return "error", "IAP appears to be disabled - no IAP headers detected."
+		return "error", "IAP appears to be disabled - no IAP headers were detected."
 	}
 
 	if data.StatusMessage == "" {
@@ -217,7 +217,7 @@ func decodeJWTPayload(token string) (string, string, string, string, error) {
 
 	var prettyJSON bytes.Buffer
 	if err := json.Indent(&prettyJSON, payload, "", "  "); err != nil {
-		return "", "", "", "", fmt.Errorf("failed to pretty print JSON: %w", err)
+		return "", "", "", "", fmt.Errorf("failed to pretty-print JSON: %w", err)
 	}
 
 	var claims map[string]interface{}

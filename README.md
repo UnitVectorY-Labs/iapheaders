@@ -24,7 +24,7 @@ The latest `iapheaders` Docker image is available for deployment from GitHub Pac
 
 The application is configurable through environment variables. Below are the available configurations:
 
-- `HIDE_SIGNATURE`: The signature of the JWT from IAP is removed and not displayed, the signature component of the JWT is replaced with "SIGNATURE_REMOVED_BY_IAPHEADERS" (default: false).
+- `HIDE_SIGNATURE`: If enabled, the signature of the JWT from IAP is removed (not displayed); the signature component of the JWT is replaced with `SIGNATURE_REMOVED_BY_IAPHEADERS` (default: false).
 - `PORT`: The port on which the server listens (default: 8080).
 
 ## IAP Headers
