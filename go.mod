@@ -2,7 +2,7 @@ module github.com/UnitVectorY-Labs/iapheaders
 
 go 1.24.2 // GOVERSION
 
-require github.com/lestrrat-go/jwx/v2 v2.1.5
+require github.com/lestrrat-go/jwx/v2 v2.1.6
 
 require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0 // indirect
