@@ -1,6 +1,6 @@
 module github.com/UnitVectorY-Labs/iapheaders
 
-go 1.25.1 // GOVERSION
+go 1.25.2 // GOVERSION
 
 require github.com/lestrrat-go/jwx/v2 v2.1.6
 
