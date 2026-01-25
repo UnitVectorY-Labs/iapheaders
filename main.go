@@ -18,6 +18,9 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
+// Version is the application version, injected at build time via ldflags
+var Version = "dev"
+
 //go:embed templates/*
 var templatesFS embed.FS
 
@@ -42,8 +45,11 @@ type HeaderData struct {
 func main() {
 	port := getEnv("PORT", "8080")
 
+	log.Printf("Starting iapheaders version %s", Version)
+
 	tpl := template.Must(template.New("index.html").Funcs(template.FuncMap{
 		"statusIndicator": statusIndicator,
+		"version":         func() string { return Version },
 	}).ParseFS(templatesFS, "templates/index.html"))
 
 	hideSignatureStr := getEnv("HIDE_SIGNATURE", "false")
