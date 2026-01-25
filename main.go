@@ -3,9 +3,11 @@ package main
 import (
 	"bytes"
 	"context"
+	"embed"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -15,6 +17,12 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
+
+//go:embed templates/*
+var templatesFS embed.FS
+
+//go:embed static/*
+var staticFS embed.FS
 
 const jwksIap = "https://www.gstatic.com/iap/verify/public_key-jwk"
 
@@ -36,14 +44,17 @@ func main() {
 
 	tpl := template.Must(template.New("index.html").Funcs(template.FuncMap{
 		"statusIndicator": statusIndicator,
-	}).ParseFiles("templates/index.html"))
+	}).ParseFS(templatesFS, "templates/index.html"))
 
 	hideSignatureStr := getEnv("HIDE_SIGNATURE", "false")
 	hideSignature := (hideSignatureStr == "true")
 
-	// Serve static files from the "static" directory
-	fs := http.FileServer(http.Dir("./static"))
-	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	// Serve static files from the embedded "static" directory
+	staticContent, err := fs.Sub(staticFS, "static")
+	if err != nil {
+		log.Fatalf("Failed to create static sub-filesystem: %v", err)
+	}
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticContent))))
 
 	// Handle the home page
 	http.HandleFunc("/", homeHandler(tpl, hideSignature))
