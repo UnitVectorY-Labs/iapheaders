@@ -247,7 +247,7 @@ func decodeJWTPayload(token string) (string, string, string, string, error) {
 		return "", "", "", "", fmt.Errorf("failed to pretty-print JSON: %w", err)
 	}
 
-	var claims map[string]interface{}
+	var claims map[string]any
 	if err := json.Unmarshal(payload, &claims); err != nil {
 		return "", "", "", "", fmt.Errorf("failed to unmarshal JSON: %w", err)
 	}
