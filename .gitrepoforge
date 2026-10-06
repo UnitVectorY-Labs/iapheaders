@@ -1,0 +1,14 @@
+name: "iapheaders"
+default_branch: "main"
+config:
+  description: "Displays GCP Identity-Aware Proxy headers and JWT for inspection."
+  license: "MIT"
+  language: "go"
+  release: "docker-go"
+  release_github: true
+  status: "active"
+  justfile: false
+  codecov:
+    enabled: true
+  docs:
+    enabled: false
