@@ -1,6 +1,7 @@
 name: "iapheaders"
 default_branch: "main"
 config:
+  osv: sarif
   description: "Displays GCP Identity-Aware Proxy headers and JWT for inspection."
   license: "MIT"
   language: "go"
