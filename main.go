@@ -1,11 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"embed"
 	"encoding/base64"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 	"io/fs"
 	"log"
@@ -242,19 +242,19 @@ func decodeJWTPayload(token string) (string, string, string, string, error) {
 		return "", "", "", "", fmt.Errorf("failed to decode payload: %w", err)
 	}
 
-	var prettyJSON bytes.Buffer
-	if err := json.Indent(&prettyJSON, payload, "", "  "); err != nil {
-		return "", "", "", "", fmt.Errorf("failed to pretty-print JSON: %w", err)
-	}
-
 	var claims map[string]any
 	if err := json.Unmarshal(payload, &claims); err != nil {
 		return "", "", "", "", fmt.Errorf("failed to unmarshal JSON: %w", err)
+	}
+
+	prettyJSON := jsontext.Value(payload)
+	if err := prettyJSON.Indent(jsontext.WithIndent("  ")); err != nil {
+		return "", "", "", "", fmt.Errorf("failed to pretty-print JSON: %w", err)
 	}
 
 	email, _ := claims["email"].(string)
 	sub, _ := claims["sub"].(string)
 	identitySource, _ := claims["identity_source"].(string)
 
-	return prettyJSON.String(), email, sub, identitySource, nil
+	return string(prettyJSON), email, sub, identitySource, nil
 }
